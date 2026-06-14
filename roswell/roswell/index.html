@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ROSwell</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/canvas.css">
+  <link rel="stylesheet" href="css/sidebar.css">
+  <link rel="stylesheet" href="css/modal.css">
+  <link rel="stylesheet" href="css/submodal.css">
+  <link rel="stylesheet" href="css/modal_package.css">
+</head>
+<body>
+
+  <!-- Splash -->
+  <div id="splash">
+    <div id="splash-logo">
+      <span class="splash-ros">ROS</span><span class="splash-well">well</span>
+    </div>
+    <div id="splash-sub">ROS2 Workspace Designer</div>
+  </div>
+
+  <!-- App -->
+  <div id="app" class="hidden">
+
+    <div id="titlebar">
+      <div id="title-logo">⬡ ROSwell</div>
+      <div id="title-center"></div>
+      <div id="title-actions">
+        <button class="title-btn" title="Import workspace">↑</button>
+        <button class="title-btn" title="Export workspace">↓</button>
+      </div>
+    </div>
+
+    <nav id="menubar">
+      <div class="menu-group">
+        <span class="menu-item" data-menu="new">New</span>
+        <span class="menu-item" data-menu="edit">Edit</span>
+        <span class="menu-item" data-menu="view">View</span>
+        <span class="menu-item" data-menu="options">Options</span>
+        <span class="menu-item" data-menu="download">Download</span>
+        <span class="menu-item" data-menu="settings">Settings</span>
+      </div>
+    </nav>
+
+    <div id="main">
+      <aside id="sidebar">
+        <div class="panel" id="pkg-panel">
+          <div class="panel-hdr">Packages <span class="panel-toggle">▼</span></div>
+          <div class="panel-body" id="pkg-tree">
+            <div class="tree-empty">No packages yet</div>
+          </div>
+        </div>
+        <div id="panel-resizer"></div>
+        <div class="panel" id="nodelist-panel">
+          <div class="panel-hdr">
+            Node List <span class="panel-toggle">▼</span>
+          </div>
+          <div class="panel-body" id="node-list">
+            <div class="tree-empty">No nodes yet</div>
+          </div>
+        </div>
+      </aside>
+
+      <div id="canvas-wrap">
+        <div id="canvas"></div>
+        <div id="node-menu-trigger" class="hidden">···</div>
+
+        <!-- FAB menu anchored inside canvas-wrap -->
+        <div id="fab-menu" class="hidden">
+          <div class="fab-menu-item" data-action="node">
+            <span class="fmi-icon">🔴</span>
+            <div>
+              <div class="fmi-label">Add Node</div>
+              <div class="fmi-sub">Place a new ROS2 node</div>
+            </div>
+          </div>
+          <div class="fab-menu-item" data-action="package">
+            <span class="fmi-icon">📦</span>
+            <div>
+              <div class="fmi-label">Add Package</div>
+              <div class="fmi-sub">Create a new package</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="bottombar">
+      <button id="fab" title="Add node or package">+</button>
+    </div>
+
+    <div id="ctx-menu" class="hidden">
+      <div class="ctx-item" data-action="edit">Edit</div>
+      <div class="ctx-item" data-action="duplicate">Duplicate</div>
+      <div class="ctx-item ctx-danger" data-action="delete">Delete</div>
+    </div>
+
+    <!-- Modal mounts -->
+    <div id="modal-root"></div>
+    <div id="submodal-root"></div>
+    <div id="pkg-modal-root"></div>
+
+  </div>
+
+  <!-- CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <!-- State -->
+  <script src="js/state/bus.js"></script>
+  <script src="js/state/store.js"></script>
+
+  <!-- Schema -->
+  <script src="js/schema/ros2.js"></script>
+  <script src="js/schema/distros.js"></script>
+
+  <!-- Services -->
+  <script src="js/services/persistence.js"></script>
+
+  <!-- Modal tabs (load before modal.js) -->
+  <script src="js/ui/modal/tab_info.js"></script>
+  <script src="js/ui/modal/tab_build.js"></script>
+  <script src="js/ui/modal/tab_comms.js"></script>
+  <script src="js/ui/modal/tab_servers.js"></script>
+  <script src="js/ui/modal/tab_threads.js"></script>
+  <script src="js/ui/modal/tab_processes.js"></script>
+  <script src="js/ui/modal/modal.js"></script>
+
+  <!-- Package modal -->
+  <script src="js/ui/modal/modal_package.js"></script>
+
+  <!-- UI -->
+  <script src="js/ui/menubar.js"></script>
+  <script src="js/ui/sidebar.js"></script>
+  <script src="js/ui/canvas.js"></script>
+  <script src="js/ui/fab.js"></script>
+
+  <!-- Boot -->
+  <script src="js/main.js"></script>
+
+</body>
+</html>

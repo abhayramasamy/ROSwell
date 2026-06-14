@@ -1,0 +1,122 @@
+/* ── CSS Variables ─────────────────────────────── */
+:root {
+  --clr-title:        #E8B800;
+  --clr-title-text:   #1a1000;
+  --clr-menu:         #111111;
+  --clr-menu-text:    #DDDDDD;
+  --clr-menu-hover:   #2a2a2a;
+  --clr-sidebar:      #F0C000;
+  --clr-sidebar-text: #1a1200;
+  --clr-canvas:       #DEDEDE;
+  --clr-canvas-dot:   rgba(0,0,0,0.13);
+  --clr-bottom:       #5B21B6;
+  --clr-fab:          #D94545;
+  --clr-fab-hover:    #BF3030;
+  --clr-node:         #D95F5F;
+  --clr-node-border:  #B84444;
+  --clr-node-text:    #ffffff;
+  --clr-ctx-bg:       #1e1e1e;
+  --clr-ctx-text:     #e8e8e8;
+  --clr-ctx-hover:    #2e2e2e;
+  --clr-ctx-danger:   #e05555;
+
+  --h-titlebar:  42px;
+  --h-menubar:   36px;
+  --h-bottombar: 60px;
+  --w-sidebar:   215px;
+
+  --font-ui:   'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Consolas', 'Courier New', monospace;
+
+  --rad-sm: 4px;
+  --rad-md: 6px;
+}
+
+/* ── Reset ─────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-ui); overflow: hidden; height: 100vh; background: #111; }
+button { cursor: pointer; border: none; background: none; font-family: inherit; }
+
+/* ── Splash ─────────────────────────────────────── */
+#splash {
+  position: fixed; inset: 0; z-index: 1000;
+  background: #111111;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 12px;
+  transition: opacity 0.5s ease;
+}
+#splash.fade-out { opacity: 0; pointer-events: none; }
+
+#splash-logo { font-size: 52px; font-weight: 700; letter-spacing: 2px; }
+.splash-ros  { color: #E8B800; }
+.splash-well { color: #ffffff; }
+
+#splash-sub  { color: #888; font-size: 15px; letter-spacing: 1px; }
+
+/* ── App shell ──────────────────────────────────── */
+#app { display: flex; flex-direction: column; height: 100vh; }
+#app.hidden { display: none; }
+
+/* ── Title bar ──────────────────────────────────── */
+#titlebar {
+  height: var(--h-titlebar);
+  background: var(--clr-title);
+  color: var(--clr-title-text);
+  display: flex; align-items: center;
+  padding: 0 12px;
+  flex-shrink: 0;
+  gap: 12px;
+}
+#title-logo {
+  font-size: 16px; font-weight: 700; letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+#title-center { flex: 1; }
+#title-actions { display: flex; gap: 6px; }
+.title-btn {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: rgba(0,0,0,0.15);
+  color: var(--clr-title-text);
+  font-size: 15px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.title-btn:hover { background: rgba(0,0,0,0.25); }
+
+/* ── Menu bar ───────────────────────────────────── */
+#menubar {
+  height: var(--h-menubar);
+  background: var(--clr-menu);
+  display: flex; align-items: center;
+  padding: 0 10px;
+  flex-shrink: 0;
+}
+.menu-group { display: flex; gap: 2px; }
+.menu-item {
+  padding: 5px 12px;
+  color: var(--clr-menu-text);
+  font-size: 13px;
+  border-radius: var(--rad-sm);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.1s;
+}
+.menu-item:hover { background: var(--clr-menu-hover); }
+.menu-item.active { background: var(--clr-menu-hover); }
+
+/* ── Main area ──────────────────────────────────── */
+#main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── Bottom bar ─────────────────────────────────── */
+#bottombar {
+  height: var(--h-bottombar);
+  background: var(--clr-bottom);
+  display: flex; align-items: center;
+  padding: 0 20px;
+  flex-shrink: 0;
+}
