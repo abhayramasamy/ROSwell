@@ -85,6 +85,19 @@
 }
 #modal-save:hover { background: #00aa36; }
 
+.modal-delete-btn {
+  padding: 6px 14px;
+  background: transparent; color: #ff4444;
+  border: 1px solid #ff4444;
+  font-size: 11px; font-weight: 700;
+  border-radius: 4px; cursor: pointer;
+  letter-spacing: 0.4px;
+  font-family: inherit;
+  transition: background 0.1s, color 0.1s;
+  flex-shrink: 0;
+}
+.modal-delete-btn:hover { background: #ff4444; color: #fff; }
+
 /* ── Form layout ────────────────────────────────── */
 .modal-form { display: flex; flex-direction: column; gap: 18px; }
 
@@ -239,6 +252,81 @@
   font-size: 12px; color: #555; font-style: italic;
   padding: 8px 4px;
 }
+
+/* ── SERVERS tab — srv row styles ───────────────── */
+.srv-legend {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 8px 12px; background: #1a1a1a; border-radius: 4px;
+  margin-bottom: 4px;
+}
+.srv-shortcut-btn {
+  margin-left: auto;
+  font-size: 11px; color: #60a5fa;
+  background: none; border: 1px solid #1e3a8a;
+  padding: 3px 10px; border-radius: 4px; cursor: pointer;
+  font-family: inherit;
+  transition: background 0.1s;
+}
+.srv-shortcut-btn:hover { background: rgba(96,165,250,0.1); }
+
+.srv-row {
+  display: flex; flex-direction: column; gap: 0;
+  background: #1a1a1a; border: 1px solid #2a2a2a;
+  border-radius: 6px; margin-bottom: 10px; overflow: hidden;
+}
+.srv-row-hdr {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; background: #111;
+  border-bottom: 1px solid #2a2a2a;
+}
+.srv-row-hdr input.row-srv-name {
+  flex: 1; background: #000; color: #ddd;
+  border: 1px solid #333; border-radius: 4px;
+  padding: 5px 8px; font-size: 12px; font-family: inherit;
+  outline: none;
+}
+.srv-row-hdr input.row-srv-name:focus { border-color: #555; }
+.srv-row-hdr select.srv-select {
+  flex: 1; background: #000; color: #a5b4fc;
+  border: 1px solid #333; border-radius: 4px;
+  padding: 5px 8px; font-size: 12px; font-family: inherit;
+  cursor: pointer; outline: none; appearance: none;
+}
+.srv-row-details { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+
+.srv-detail-row {
+  display: flex; align-items: center; gap: 10px;
+}
+.srv-detail-label {
+  font-size: 11px; color: #777; width: 90px; flex-shrink: 0;
+  display: flex; align-items: center; gap: 5px;
+}
+.srv-input {
+  flex: 1; background: #000; color: #ddd;
+  border: 1px solid #2a2a2a; border-radius: 4px;
+  padding: 5px 8px; font-size: 12px; font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.srv-input:focus { border-color: #555; }
+.srv-input[readonly] { color: #556; cursor: default; }
+.srv-select {
+  flex: 1; background: #000; color: #a5b4fc;
+  border: 1px solid #2a2a2a; border-radius: 4px;
+  padding: 5px 8px; font-size: 12px; font-family: inherit;
+  cursor: pointer; outline: none; appearance: none;
+}
+.srv-qos { color: #a5b4fc; }
+.srv-define-btn {
+  font-size: 11px; color: #0ef09d;
+  background: none; border: 1px solid #0ef09d;
+  padding: 3px 8px; border-radius: 3px; cursor: pointer;
+  font-family: inherit; white-space: nowrap;
+  transition: background 0.1s;
+}
+.srv-define-btn:hover { background: rgba(14,240,157,0.1); }
+.srv-optional-hint { font-size: 10px; color: #444; white-space: nowrap; }
+.srv-checkbox { width: 14px; height: 14px; cursor: pointer; accent-color: #3b82f6; flex-shrink: 0; }
 
 /* ── PROCESSES tab — Timer blocks ───────────────── */
 .timer-block {

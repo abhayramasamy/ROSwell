@@ -1,6 +1,6 @@
 /* js/main.js — Boot sequence */
 (function () {
-  const SPLASH_MS = 800;
+  const SPLASH_MS = 100;
   const FADE_MS   = 400;
 
   function bootApp() {
@@ -11,6 +11,9 @@
     Fab.init();
     Modal.init();
     ModalPackage.init();
+    ModalTopic.init();
+    ModalQos.init();
+    ModalInterface.init();
     Persistence.init();
   }
 

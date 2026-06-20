@@ -1,7 +1,7 @@
 /* js/ui/modal/modal.js — Node editor modal orchestrator */
 window.Modal = (() => {
-  let _nodeId   = null;
-  let _draft    = null;
+  let _nodeId    = null;
+  let _draft     = null;
   let _activeTab = 'info';
 
   const TABS = [
@@ -24,6 +24,7 @@ window.Modal = (() => {
           </div>
           <div id="modal-body"></div>
           <div id="modal-footer">
+            <button id="modal-delete" class="modal-delete-btn">🗑 Delete Node</button>
             <div id="modal-error"></div>
             <button id="modal-save">SAVE</button>
           </div>
@@ -33,10 +34,16 @@ window.Modal = (() => {
 
     document.getElementById('modal-close').addEventListener('click', close);
     document.getElementById('modal-save').addEventListener('click', save);
+    document.getElementById('modal-delete').addEventListener('click', () => {
+      if (!_nodeId) return;
+      if (!confirm('Delete this node? This cannot be undone.')) return;
+      const id = _nodeId;
+      close();
+      Store.removeNode(id);
+    });
     document.getElementById('modal-overlay').addEventListener('click', e => {
       if (e.target === document.getElementById('modal-overlay')) close();
     });
-
     document.querySelectorAll('.mtab').forEach(tab => {
       tab.addEventListener('click', () => _switchTab(tab.dataset.tab));
     });
@@ -52,7 +59,9 @@ window.Modal = (() => {
     if (!node) return;
     _draft = JSON.parse(JSON.stringify(node));
 
-    document.getElementById('modal-error').textContent = '';
+    const errEl = document.getElementById('modal-error');
+    errEl.textContent = '';
+    errEl.style.color = '';
     document.getElementById('modal-overlay').classList.remove('hidden');
     _renderTabs();
     _renderBody();
@@ -97,9 +106,9 @@ window.Modal = (() => {
   /* ── Validation ──────────────────────────────────── */
   function _validate() {
     const errs = [];
-    if (!_draft.name || !_draft.name.trim())  errs.push('Node name is required');
-    if (!_draft.package)                       errs.push('Package is required');
-    if (!_draft.language)                      errs.push('Language is required');
+    if (!_draft.name || !_draft.name.trim()) errs.push('Node name is required');
+    if (!_draft.package)                      errs.push('Package is required');
+    if (!_draft.language)                     errs.push('Language is required');
     return errs;
   }
 
@@ -107,12 +116,13 @@ window.Modal = (() => {
   function save() {
     _collectCurrent();
 
-    const errs = _validate();
     const errEl = document.getElementById('modal-error');
+    errEl.style.color = '';
 
+    /* Structural validation */
+    const errs = _validate();
     if (errs.length) {
       errEl.textContent = 'ERROR: ' + errs.join(' · ').toUpperCase();
-      /* Flash required fields red */
       ['fb-name', 'fb-pkg'].forEach(id => {
         const el = document.getElementById(id);
         if (el) { el.classList.add('field-error'); setTimeout(() => el.classList.remove('field-error'), 2000); }
@@ -120,14 +130,31 @@ window.Modal = (() => {
       return;
     }
 
-    errEl.textContent = '';
+    /* Topic datatype consistency — BLOCKING */
+    const commsErrs = TabComms.validate(_draft.publishers || [], _draft.subscribers || []);
+    if (commsErrs.length > 0) {
+      errEl.style.color = '#ff4444';
+      errEl.textContent = '⚠ TOPIC TYPE CONFLICT: ' + commsErrs[0];
+      setTimeout(() => { if (errEl.style.color === 'rgb(255, 68, 68)') { errEl.textContent = ''; errEl.style.color = ''; } }, 5000);
+      return;
+    }
 
-    /* Mark configured if name changed from default + package set */
+    /* All good — save */
+    errEl.textContent = '';
     const defaultName = /^node_\d+$/.test(_draft.name);
     _draft.configured = !defaultName && !!_draft.package;
-
     Store.updateNode(_nodeId, _draft);
-    close();
+
+    /* QoS cross-node compatibility check — NON-BLOCKING WARNING */
+    const qosWarns = TabComms.checkQosCompatibility(_draft.publishers || [], _draft.subscribers || [], _nodeId);
+    if (qosWarns.length > 0) {
+      errEl.style.color = '#FBBF24';
+      errEl.textContent = '⚠ QoS: ' + qosWarns[0] + (qosWarns.length > 1 ? ` (+${qosWarns.length - 1} more)` : '');
+      /* Show warning for 3 s then auto-close */
+      setTimeout(() => close(), 3200);
+    } else {
+      close();
+    }
   }
 
   return { init, open, close };

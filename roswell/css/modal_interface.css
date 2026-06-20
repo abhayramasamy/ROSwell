@@ -1,0 +1,195 @@
+/* ── Configure Interface Modal ───────────────── */
+#iface-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.65);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 800;
+}
+#iface-overlay.hidden { display: none; }
+
+#iface-modal {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 10px;
+  width: 620px;
+  max-width: 96vw;
+  max-height: 88vh;
+  overflow-y: auto;
+  display: flex; flex-direction: column;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.75);
+}
+
+/* ── Header ─────────────────────────────────── */
+.iface-modal-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px 14px;
+  border-bottom: 1px solid #2a2a2a;
+  font-size: 13px; font-weight: 800;
+  color: #ddd; letter-spacing: 0.6px; text-transform: uppercase;
+  position: sticky; top: 0; background: #1a1a1a; z-index: 10;
+}
+#iface-close {
+  background: none; border: none; color: #666;
+  font-size: 18px; cursor: pointer; padding: 2px 6px; border-radius: 4px;
+  transition: background 0.1s, color 0.1s;
+}
+#iface-close:hover { background: #333; color: #ddd; }
+
+/* ── Body ────────────────────────────────────── */
+#iface-modal-body { padding: 20px; flex: 1; }
+
+.iface-section-title {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.5px; color: #888; margin-bottom: 10px;
+  display: flex; align-items: center; gap: 10px;
+}
+
+/* ── Tab switcher ───────────────────────────────── */
+.iface-type-tabs {
+  display: flex; gap: 0; margin-bottom: 16px;
+  border: 1px solid #333; border-radius: 6px; overflow: hidden;
+}
+.iface-tab {
+  flex: 1; padding: 7px 0;
+  background: #222; color: #777;
+  border: none; cursor: pointer;
+  font-size: 12px; font-weight: 600;
+  transition: background 0.1s, color 0.1s;
+}
+.iface-tab:hover { background: #2a2a2a; color: #bbb; }
+.iface-tab-active { background: #1a1a1a !important; color: #0EA5E9 !important; }
+
+/* ── Existing interface list ─────────────────── */
+.iface-list-empty { font-size: 12px; color: #555; font-style: italic; padding: 6px 0; }
+.iface-list-card {
+  display: flex; align-items: center; justify-content: space-between;
+  background: #222; border: 1px solid #303030; border-radius: 6px;
+  padding: 9px 14px; margin-bottom: 7px;
+  transition: border-color 0.15s;
+}
+.iface-list-card:hover { border-color: #444; }
+.iface-list-info { display: flex; flex-direction: column; gap: 3px; }
+.iface-list-path { font-size: 12px; font-weight: 600; color: #aac4ff; font-family: Consolas, monospace; }
+.iface-list-vars { font-size: 11px; color: #555; }
+.iface-list-actions { display: flex; gap: 6px; }
+.iface-list-edit {
+  padding: 4px 12px; font-size: 11px; font-weight: 600;
+  background: #333; color: #aaa; border: none; border-radius: 4px;
+  cursor: pointer; transition: background 0.1s;
+}
+.iface-list-edit:hover { background: #444; color: #ddd; }
+.iface-list-del {
+  padding: 4px 9px; font-size: 14px;
+  background: #2a1212; color: #e05; border: none; border-radius: 4px;
+  cursor: pointer; transition: background 0.1s;
+}
+.iface-list-del:hover { background: #3a1515; }
+
+.iface-btn-new {
+  background: none; border: 1px dashed #444; color: #888;
+  padding: 7px 14px; border-radius: 5px; font-size: 12px;
+  cursor: pointer; transition: border-color 0.15s, color 0.15s;
+}
+.iface-btn-new:hover { border-color: #0EA5E9; color: #0EA5E9; }
+
+/* ── Form ────────────────────────────────────── */
+.iface-form { border-top: 1px solid #2a2a2a; padding-top: 18px; margin-top: 4px; }
+
+.iface-row-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.iface-field    { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+.iface-label {
+  font-size: 11px; font-weight: 600; color: #888;
+  text-transform: uppercase; letter-spacing: 0.4px;
+  display: flex; align-items: center; gap: 6px;
+}
+.iface-tip {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #333; color: #888; font-size: 10px;
+  cursor: help; font-weight: 700;
+}
+.iface-tip:hover { background: #444; color: #ccc; }
+
+.iface-inline-btn {
+  padding: 0 6px; font-size: 14px; line-height: 1;
+  background: #2a2a2a; color: #888; border: 1px solid #444;
+  border-radius: 3px; cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+.iface-inline-btn:hover { background: #374151; color: #FFD000; border-color: #FFD000; }
+
+.iface-input, .iface-select {
+  background: #111; border: 1px solid #333; border-radius: 5px;
+  color: #ddd; font-size: 13px; padding: 8px 10px;
+  outline: none; font-family: inherit; width: 100%; box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+.iface-input:focus, .iface-select:focus { border-color: #0EA5E9; }
+.iface-input-error { border-color: #e05 !important; }
+.iface-select { appearance: none; cursor: pointer; }
+
+.iface-name-hint { font-size: 11px; color: #555; margin-top: 2px; }
+.iface-name-preview { color: #0EA5E9; font-family: Consolas, monospace; }
+
+/* ── Variable rows ───────────────────────────── */
+.iface-var-list { margin-bottom: 6px; }
+.iface-var-empty { font-size: 12px; color: #555; font-style: italic; padding: 8px 0; }
+
+.iface-var-row {
+  display: flex; gap: 8px; align-items: center;
+  background: #141414; border: 1px solid #2a2a2a; border-radius: 5px;
+  padding: 7px 10px; margin-bottom: 6px;
+}
+.iface-var-name {
+  flex: 1; background: #111; border: 1px solid #333; border-radius: 4px;
+  color: #ddd; font-size: 12px; padding: 5px 8px;
+  font-family: Consolas, monospace; outline: none;
+  transition: border-color 0.15s;
+}
+.iface-var-name:focus { border-color: #0EA5E9; }
+.iface-var-type {
+  background: #111; border: 1px solid #333; border-radius: 4px;
+  color: #a5b4fc; font-size: 12px; padding: 5px 6px;
+  cursor: pointer; outline: none; font-family: Consolas, monospace;
+  appearance: none;
+}
+.iface-var-type:focus { border-color: #0EA5E9; }
+.iface-var-del {
+  padding: 4px 8px; background: #2a1212; color: #e05;
+  border: none; border-radius: 4px; cursor: pointer;
+  font-size: 14px; transition: background 0.1s;
+}
+.iface-var-del:hover { background: #3a1515; }
+
+.iface-add-var-btn {
+  background: none; border: 1px dashed #333; color: #666;
+  padding: 3px 10px; border-radius: 4px; font-size: 11px;
+  cursor: pointer; transition: border-color 0.1s, color 0.1s;
+}
+.iface-add-var-btn:hover { border-color: #0EA5E9; color: #0EA5E9; }
+
+/* ── Separator ───────────────────────────────── */
+.iface-separator {
+  text-align: center; font-size: 11px; color: #444;
+  font-family: Consolas, monospace; padding: 10px 0 6px;
+  letter-spacing: 0.5px;
+}
+
+/* ── Form footer ─────────────────────────────── */
+.iface-form-footer {
+  display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px;
+}
+.iface-btn-secondary {
+  padding: 8px 18px; background: #2a2a2a; color: #888;
+  border: none; border-radius: 5px; cursor: pointer;
+  font-size: 12px; font-weight: 600; font-family: inherit;
+  transition: background 0.1s;
+}
+.iface-btn-secondary:hover { background: #333; color: #ccc; }
+.iface-btn-primary {
+  padding: 8px 20px; background: #0369a1; color: #fff;
+  border: none; border-radius: 5px; cursor: pointer;
+  font-size: 12px; font-weight: 700; font-family: inherit;
+  transition: background 0.1s;
+}
+.iface-btn-primary:hover { background: #075985; }
