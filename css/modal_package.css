@@ -1,0 +1,193 @@
+/* ── Package modal overlay ───────────────────────── */
+#pkg-modal-overlay {
+  position: fixed; inset: 0; z-index: 400;
+  background: rgba(0,0,0,0.75);
+  display: flex; align-items: center; justify-content: center;
+}
+#pkg-modal-overlay.hidden { display: none; }
+
+/* ── Package modal shell ─────────────────────────── */
+#pkg-modal {
+  width: 580px;
+  max-height: 90vh;
+  background: #252525;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.65);
+}
+
+/* ── Header ──────────────────────────────────────── */
+#pkg-modal-header {
+  display: flex; align-items: center;
+  background: #181818;
+  padding: 0 16px;
+  height: 46px;
+  border-bottom: 1px solid #111;
+  flex-shrink: 0;
+}
+#pkg-modal-title {
+  flex: 1;
+  font-size: 13px; font-weight: 700;
+  color: #E8B800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+#pkg-modal-close {
+  background: none; border: none;
+  color: #666; font-size: 16px; cursor: pointer;
+  padding: 4px 6px; border-radius: 3px;
+  transition: color 0.1s, background 0.1s;
+}
+#pkg-modal-close:hover { color: #fff; background: #991111; }
+
+/* ── Body ────────────────────────────────────────── */
+#pkg-modal-body {
+  padding: 20px 24px 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* ── Section labels ──────────────────────────────── */
+.pm-section-label {
+  font-size: 10px; font-weight: 800;
+  color: #666;
+  text-transform: uppercase; letter-spacing: 0.7px;
+  margin: 16px 0 8px;
+  display: flex; align-items: center; gap: 8px;
+}
+.pm-section-label:first-child { margin-top: 0; }
+
+.pm-section-sub {
+  font-size: 10px; font-weight: 400;
+  color: #555; text-transform: none;
+  letter-spacing: 0;
+}
+
+/* ── Two-column row ──────────────────────────────── */
+.pm-row-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* ── Form rows (shared with modal.css conventions) ── */
+#pkg-modal-body .form-row {
+  display: flex; flex-direction: column;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+#pkg-modal-body .form-row:last-child { margin-bottom: 0; }
+
+#pkg-modal-body label {
+  font-size: 11px; font-weight: 600;
+  color: #888;
+  text-transform: uppercase; letter-spacing: 0.4px;
+}
+
+#pkg-modal-body input[type="text"],
+#pkg-modal-body input[type="email"],
+#pkg-modal-body select,
+#pkg-modal-body textarea {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #ddd;
+  font-size: 12px;
+  padding: 7px 10px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+  box-sizing: border-box;
+}
+#pkg-modal-body input:focus,
+#pkg-modal-body select:focus,
+#pkg-modal-body textarea:focus {
+  border-color: #E8B800;
+}
+#pkg-modal-body textarea {
+  resize: vertical;
+  min-height: 52px;
+  line-height: 1.4;
+}
+#pkg-modal-body select option { background: #1a1a1a; }
+
+.req { color: #E8B800; font-weight: 900; }
+
+/* ── Hint text ───────────────────────────────────── */
+.field-hint {
+  font-size: 11px; color: #555;
+  background: #1a1a1a;
+  border-left: 3px solid #333;
+  padding: 7px 10px;
+  border-radius: 3px;
+  line-height: 1.5;
+  margin-bottom: 2px;
+}
+.field-hint b { color: #888; }
+
+/* ── Dependency tags ─────────────────────────────── */
+.pm-deps-tags {
+  display: flex; flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+  min-height: 4px;
+}
+
+.pm-dep-tag {
+  display: inline-flex; align-items: center;
+  gap: 5px;
+  background: #1e3a5f;
+  border: 1px solid #2a5a9f;
+  color: #7bb8f8;
+  font-size: 11px; font-weight: 600;
+  padding: 3px 8px 3px 10px;
+  border-radius: 20px;
+  font-family: monospace;
+}
+
+.pm-dep-remove {
+  background: none; border: none;
+  color: #5588cc;
+  font-size: 14px; line-height: 1;
+  cursor: pointer; padding: 0;
+  transition: color 0.1s;
+  display: flex; align-items: center;
+}
+.pm-dep-remove:hover { color: #ff6666; }
+
+/* ── Footer ──────────────────────────────────────── */
+#pkg-modal-footer {
+  display: flex; align-items: center;
+  background: #111;
+  padding: 0 20px;
+  height: 52px;
+  gap: 10px;
+  border-top: 1px solid #222;
+  flex-shrink: 0;
+}
+#pkg-modal-error {
+  flex: 1;
+  font-size: 12px; font-weight: 700;
+  color: #ff4444;
+}
+#pkg-modal-cancel {
+  padding: 7px 18px;
+  background: #333; color: #bbb;
+  font-size: 12px; font-weight: 600;
+  border-radius: 4px; cursor: pointer; border: none;
+  font-family: inherit;
+  transition: background 0.1s;
+}
+#pkg-modal-cancel:hover { background: #444; }
+#pkg-modal-save {
+  padding: 7px 20px;
+  background: #5B21B6; color: #fff;
+  font-size: 12px; font-weight: 700;
+  border-radius: 4px; cursor: pointer; border: none;
+  font-family: inherit;
+  letter-spacing: 0.4px;
+  transition: background 0.1s;
+}
+#pkg-modal-save:hover { background: #4a1a96; }

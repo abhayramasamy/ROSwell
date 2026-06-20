@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ROSwell</title>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/canvas.css">
+  <link rel="stylesheet" href="css/sidebar.css">
+  <link rel="stylesheet" href="css/modal.css">
+  <link rel="stylesheet" href="css/submodal.css">
+  <link rel="stylesheet" href="css/modal_package.css">
+  <link rel="stylesheet" href="css/modal_topic.css">
+  <link rel="stylesheet" href="css/modal_qos.css">
+  <link rel="stylesheet" href="css/modal_interface.css">
+</head>
+<body>
+
+  <!-- Splash -->
+  <div id="splash">
+    <div id="splash-logo">
+      <span class="splash-ros">ROS</span><span class="splash-well">well</span>
+    </div>
+    <div id="splash-sub">ROS2 Workspace Designer</div>
+  </div>
+
+  <!-- App -->
+  <div id="app" class="hidden">
+
+    <div id="titlebar">
+      <div id="title-logo">⬡ ROSwell</div>
+      <div id="title-center"></div>
+      <div id="title-actions">
+        <button class="title-btn" title="Import workspace">↑</button>
+        <button class="title-btn" title="Export workspace">↓</button>
+      </div>
+    </div>
+
+    <nav id="menubar">
+      <div class="menu-group">
+        <span class="menu-item" data-menu="new">New</span>
+        <span class="menu-item" data-menu="edit">Edit</span>
+        <span class="menu-item" data-menu="view">View</span>
+        <span class="menu-item" data-menu="options">Options</span>
+        <span class="menu-item" data-menu="download">Download</span>
+        <span class="menu-item" data-menu="settings">Settings</span>
+      </div>
+    </nav>
+
+    <div id="main">
+      <aside id="sidebar">
+        <div class="panel" id="pkg-panel">
+          <div class="panel-hdr">Packages <span class="panel-toggle">▼</span></div>
+          <div class="panel-body" id="pkg-tree">
+            <div class="tree-empty">No packages yet</div>
+          </div>
+        </div>
+        <div id="panel-resizer"></div>
+        <div class="panel" id="nodelist-panel">
+          <div class="panel-hdr">
+            Node List <span class="panel-toggle">▼</span>
+          </div>
+          <div class="panel-body" id="node-list">
+            <div class="tree-empty">No nodes yet</div>
+          </div>
+        </div>
+      </aside>
+
+      <div id="canvas-wrap">
+        <div id="canvas"></div>
+        <div id="node-menu-trigger" class="hidden">···</div>
+
+        <!-- Bounding box draw overlay -->
+        <div id="bbox-overlay">
+          <div id="bbox-rubber" class="hidden"></div>
+        </div>
+
+        <!-- Bounding box label + color picker -->
+        <div id="bbox-picker" class="hidden">
+          <div class="bpick-title">🏷 Name this group</div>
+          <input id="bpick-label" type="text" placeholder="e.g. Perception Stack" autocomplete="off" spellcheck="false">
+          <div class="bpick-colors-label">Color</div>
+          <div class="bpick-swatches">
+            <span class="bpick-swatch active" data-ci="0" style="background:#1d4ed8" title="Navy"></span>
+            <span class="bpick-swatch"        data-ci="1" style="background:#15803d" title="Forest"></span>
+            <span class="bpick-swatch"        data-ci="2" style="background:#7c3aed" title="Plum"></span>
+            <span class="bpick-swatch"        data-ci="3" style="background:#b91c1c" title="Rust"></span>
+            <span class="bpick-swatch"        data-ci="4" style="background:#0d9488" title="Teal"></span>
+            <span class="bpick-swatch"        data-ci="5" style="background:#d97706" title="Amber"></span>
+            <span class="bpick-swatch"        data-ci="6" style="background:#db2777" title="Rose"></span>
+            <span class="bpick-swatch"        data-ci="7" style="background:#475569" title="Slate"></span>
+            <span class="bpick-swatch"        data-ci="8" style="background:#0891b2" title="Cyan"></span>
+            <span class="bpick-swatch"        data-ci="9" style="background:#65a30d" title="Olive"></span>
+          </div>
+          <div class="bpick-footer">
+            <button id="bpick-cancel">Cancel</button>
+            <button id="bpick-ok">Add Box</button>
+          </div>
+        </div>
+
+        <!-- FAB menu -->
+        <div id="fab-menu" class="hidden">
+          <div class="fab-menu-item" data-action="node">
+            <span class="fmi-icon">🔴</span>
+            <div>
+              <div class="fmi-label">Add Node</div>
+              <div class="fmi-sub">Place a new ROS2 node</div>
+            </div>
+          </div>
+          <div class="fab-menu-item" data-action="package">
+            <span class="fmi-icon">📦</span>
+            <div>
+              <div class="fmi-label">Add Package</div>
+              <div class="fmi-sub">Create a new package</div>
+            </div>
+          </div>
+          <div class="fab-menu-item" data-action="topic">
+            <span class="fmi-icon">🔵</span>
+            <div>
+              <div class="fmi-label">Insert Topic</div>
+              <div class="fmi-sub">Place a topic oval on canvas</div>
+            </div>
+          </div>
+          <div class="fab-menu-item" data-action="bbox">
+            <span class="fmi-icon">⬜</span>
+            <div>
+              <div class="fmi-label">Add Bounding Box</div>
+              <div class="fmi-sub">Draw a labelled group box</div>
+            </div>
+          </div>
+          <div class="fab-menu-item" data-action="interface">
+            <span class="fmi-icon">🔌</span>
+            <div>
+              <div class="fmi-label">Interface</div>
+              <div class="fmi-sub">Define .srv / .msg / .action</div>
+            </div>
+          </div>
+          <div class="fab-menu-item" data-action="qos">
+            <span class="fmi-icon">⚙</span>
+            <div>
+              <div class="fmi-label">New QoS Profile</div>
+              <div class="fmi-sub">Define custom QoS settings</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="bottombar">
+      <button id="fab" title="Add node, package, topic, interface, or QoS">+</button>
+    </div>
+
+    <div id="ctx-menu" class="hidden">
+      <div class="ctx-item" data-action="edit">Edit</div>
+      <div class="ctx-item" data-action="duplicate">Duplicate</div>
+      <div class="ctx-item ctx-danger" data-action="delete">Delete</div>
+    </div>
+
+    <!-- Tooltip -->
+    <div id="canvas-tooltip" class="hidden"></div>
+
+    <!-- Modal mounts -->
+    <div id="modal-root"></div>
+    <div id="submodal-root"></div>
+    <div id="pkg-modal-root"></div>
+    <div id="topic-modal-root"></div>
+    <div id="qos-modal-root"></div>
+    <div id="iface-modal-root"></div>
+
+  </div>
+
+  <!-- CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <!-- State -->
+  <script src="js/state/bus.js"></script>
+  <script src="js/state/store.js"></script>
+
+  <!-- Schema -->
+  <script src="js/schema/ros2.js"></script>
+  <script src="js/schema/distros.js"></script>
+
+  <!-- Services -->
+  <script src="js/services/persistence.js"></script>
+
+  <!-- Modal tabs (load before modal.js) -->
+  <script src="js/ui/modal/tab_info.js"></script>
+  <script src="js/ui/modal/tab_build.js"></script>
+  <script src="js/ui/modal/tab_comms.js"></script>
+  <script src="js/ui/modal/tab_servers.js"></script>
+  <script src="js/ui/modal/tab_threads.js"></script>
+  <script src="js/ui/modal/tab_processes.js"></script>
+  <script src="js/ui/modal/modal.js"></script>
+
+  <!-- Standalone modals -->
+  <script src="js/ui/modal/modal_package.js"></script>
+  <script src="js/ui/modal/modal_topic.js"></script>
+  <script src="js/ui/modal/modal_qos.js"></script>
+  <script src="js/ui/modal/modal_interface.js"></script>
+
+  <!-- UI -->
+  <script src="js/ui/menubar.js"></script>
+  <script src="js/ui/sidebar.js"></script>
+  <script src="js/ui/canvas.js"></script>
+  <script src="js/ui/fab.js"></script>
+
+  <!-- Boot -->
+  <script src="js/main.js"></script>
+
+</body>
+</html>
