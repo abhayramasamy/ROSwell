@@ -287,7 +287,7 @@ window.ModalInterface = (() => {
     document.getElementById('iface-new-btn')?.addEventListener('click', () => _openForm(null));
     _bindListActions();
 
-    /* Tab switching */
+    /* Tab switching — FIX: Don't re-render entire modal, just swap content */
     document.querySelectorAll('.iface-tab').forEach(btn => {
       btn.addEventListener('click', () => {
         const type = btn.dataset.tab;
@@ -295,8 +295,20 @@ window.ModalInterface = (() => {
         _listType = type;
         _closeForm();
         _editingId = null;
-        document.getElementById('iface-modal-root').innerHTML = _html();
-        _bindStatic();
+        
+        /* Update tab styling without destroying DOM */
+        document.querySelectorAll('.iface-tab').forEach(b => {
+          b.classList.remove('iface-tab-active');
+          if (b.dataset.tab === type) b.classList.add('iface-tab-active');
+        });
+        
+        /* Update title */
+        const titleEls = document.querySelectorAll('.iface-section-title');
+        if (titleEls.length > 0) {
+          titleEls[0].textContent = `Existing .${type} Interfaces`;
+        }
+        
+        /* Refresh list with new interface type */
         _refreshList();
       });
     });
