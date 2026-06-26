@@ -1,316 +1,282 @@
-/* js/ui/modal/tab_servers.js — SERVERS tab (service server/client + action stubs) */
+/* js/ui/modal/tab_servers.js — SERVERS tab
+   Two sections: Services (server + client) and Actions (server + client)
+   Matches existing IIFE pattern. CSS classes from modal.css (srv-row, etc.)
+*/
 window.TabServers = (() => {
 
-  /* ── Helpers ─────────────────────────────────── */
-  function _qosSelectHtml(selectedId) {
-    const sel     = selectedId || 'default';
-    const builtin = ROS2Schema.BUILTIN_QOS;
-    const customs = Object.values(Store.getState().qosProfiles || {});
-    const bOpts   = Object.entries(builtin).map(([id, p]) =>
-      `<option value="${id}" ${sel === id ? 'selected' : ''}>${p.label}</option>`
-    ).join('');
-    const cOpts = customs.length
-      ? `<optgroup label="── Custom ──">${customs.map(p =>
-          `<option value="${p.id}" ${sel === p.id ? 'selected' : ''}>${p.name}</option>`
-        ).join('')}</optgroup>`
-      : '';
-    return `<select class="row-qos srv-qos" title="QoS Profile">${bOpts}${cOpts}</select>`;
+  /* ── Interface dropdowns ─────────────────────────────────────────── */
+  function _ifaceOptions(filterType, selectedId) {
+    const ifaces = Object.values(Store.getState().interfaces || {})
+      .filter(i => i.type === filterType);
+    if (!ifaces.length)
+      return `<option value="">-- no ${filterType} interfaces defined --</option>`;
+    return `<option value="">-- select interface --</option>` +
+      ifaces.map(i => {
+        const pkg   = Store.getState().packages[i.package];
+        const label = pkg ? `${pkg.name}/${i.name}` : i.name;
+        return `<option value="${i.id}" ${selectedId === i.id ? 'selected' : ''}>${label}</option>`;
+      }).join('');
   }
 
-  /* All .srv interfaces as 'pkgName/name.srv' options */
-  function _srvFileOptions(selectedId) {
-    const state  = Store.getState();
-    const ifaces = Object.values(state.interfaces || {}).filter(i => i.type === 'srv');
-    if (!ifaces.length) return `<option value="" disabled selected>No .srv interfaces — use Configure Interface</option>`;
-    return ifaces.map(i => {
-      const pkg   = state.packages[i.package];
-      const label = pkg ? `${pkg.name}/${i.name}.srv` : `?/${i.name}.srv`;
-      return `<option value="${i.id}" ${selectedId === i.id ? 'selected' : ''}>${label}</option>`;
-    }).join('');
-  }
-
-  /* All existing service server names across all nodes EXCEPT the editing node */
-  function _allServerOptions(editingNodeId, selectedName) {
-    const state   = Store.getState();
-    const servers = [];
-    Object.values(state.nodes).forEach(node => {
-      if (node.id === editingNodeId) return;
-      (node.serviceServers || []).forEach(srv => {
-        if (srv.name) servers.push({ name: srv.name, nodeName: node.name, srvFile: srv.srvFile });
-      });
+  function _refreshIfaceSelects() {
+    document.querySelectorAll('.srv-iface-select[data-iface-type]').forEach(sel => {
+      const type    = sel.dataset.ifaceType;
+      const current = sel.value;
+      sel.innerHTML = _ifaceOptions(type, current);
     });
-    if (!servers.length) return `<option value="" disabled selected>No servers defined in workspace</option>`;
-    return servers.map(s =>
-      `<option value="${s.name}" data-srvfile="${s.srvFile || ''}" ${selectedName === s.name ? 'selected' : ''}>${s.name} (${s.nodeName})</option>`
-    ).join('');
   }
 
-  /* ── Service Server row ──────────────────────── */
+  /* ── Row templates ───────────────────────────────────────────────── */
   function _srvServerRow(row) {
     row = row || {};
-    return `<div class="list-row srv-row srv-server-entry">
+    return `<div class="srv-row" data-role="srv-server">
       <div class="srv-row-hdr">
-        <span class="row-badge srv-server-badge">SRV SVR</span>
-        <input class="row-srv-name" type="text" placeholder="service_name (unique in workspace)"
-          value="${row.name || ''}" spellcheck="false" autocomplete="off">
+        <span class="row-badge srv-server-badge">SRV SRV</span>
+        <input class="row-srv-name srv-input" placeholder="/service_name"
+               value="${row.name || ''}" autocomplete="off" spellcheck="false">
         <button class="row-del" title="Remove">×</button>
       </div>
       <div class="srv-row-details">
         <div class="srv-detail-row">
-          <label class="srv-detail-label">.srv File</label>
-          <select class="row-srv-file srv-select">${_srvFileOptions(row.srvFile || '')}</select>
-          <button class="srv-define-btn" title="Define new .srv interface">+ Define .srv</button>
+          <span class="srv-detail-label">Interface</span>
+          <select class="srv-iface-select srv-select" data-iface-type="srv">
+            ${_ifaceOptions('srv', row.interfaceId || '')}
+          </select>
+          <button class="srv-define-btn" data-iface-type="srv">+ Define</button>
         </div>
         <div class="srv-detail-row">
-          <label class="srv-detail-label">Callback Fn</label>
-          <input class="row-srv-cb srv-input" type="text" placeholder="handle_request (optional)"
-            value="${row.callbackFn || ''}" spellcheck="false">
-          <span class="srv-optional-hint">optional</span>
-        </div>
-        <div class="srv-detail-row">
-          <label class="srv-detail-label">QoS Profile</label>
-          ${_qosSelectHtml(row.qos || 'default')}
+          <span class="srv-detail-label">Callback</span>
+          <input class="srv-cb-input srv-input" placeholder="handle_service"
+                 value="${row.callbackName || ''}">
         </div>
       </div>
     </div>`;
   }
 
-  /* ── Service Client row ──────────────────────── */
-  function _srvClientRow(row, editingNodeId) {
+  function _srvClientRow(row) {
     row = row || {};
-    const ctEnabled  = row.connectTimeout && row.connectTimeout.enabled;
-    const srfnEnabled = row.sendRequestFn  && row.sendRequestFn.enabled;
-    return `<div class="list-row srv-row srv-client-entry">
+    return `<div class="srv-row" data-role="srv-client">
       <div class="srv-row-hdr">
         <span class="row-badge srv-client-badge">SRV CLI</span>
-        <select class="row-cli-server srv-select" title="Select existing service server">
-          ${_allServerOptions(editingNodeId, row.name || '')}
-        </select>
+        <input class="row-srv-name srv-input" placeholder="/service_name"
+               value="${row.name || ''}" autocomplete="off" spellcheck="false">
         <button class="row-del" title="Remove">×</button>
       </div>
       <div class="srv-row-details">
         <div class="srv-detail-row">
-          <label class="srv-detail-label">.srv File</label>
-          <input class="row-cli-srvfile srv-input" type="text" readonly
-            placeholder="Auto-filled from server" style="opacity:0.5;cursor:default"
-            value="${_resolveSrvFileLabel(row.srvFile) || ''}">
+          <span class="srv-detail-label">Interface</span>
+          <select class="srv-iface-select srv-select" data-iface-type="srv">
+            ${_ifaceOptions('srv', row.interfaceId || '')}
+          </select>
+          <button class="srv-define-btn" data-iface-type="srv">+ Define</button>
         </div>
         <div class="srv-detail-row">
-          <label class="srv-detail-label">
-            <input type="checkbox" class="srv-checkbox" id="" data-target="cli-timeout"
-              ${ctEnabled ? 'checked' : ''}>
-            Connect Timeout
-          </label>
-          <input class="row-cli-timeout srv-input srv-conditional" type="number" min="1"
-            placeholder="ms" value="${(ctEnabled && row.connectTimeout.ms) || 5000}"
-            ${!ctEnabled ? 'style="display:none"' : ''}>
-          <span class="srv-optional-hint">ms</span>
-        </div>
-        <div class="srv-detail-row">
-          <label class="srv-detail-label">
-            <input type="checkbox" class="srv-checkbox" data-target="cli-srfn"
-              ${srfnEnabled ? 'checked' : ''}>
-            Send Request Fn
-          </label>
-          <input class="row-cli-srfn srv-input srv-conditional" type="text"
-            placeholder="send_request (optional)"
-            value="${(srfnEnabled && row.sendRequestFn.fn) || ''}"
-            ${!srfnEnabled ? 'style="display:none"' : ''}
-            spellcheck="false">
+          <span class="srv-detail-label srv-optional-hint">Response CB</span>
+          <input class="srv-cb-input srv-input" placeholder="response_callback (optional)"
+                 value="${row.callbackName || ''}">
         </div>
       </div>
     </div>`;
   }
 
-  /* Resolve interface ID to display label */
-  function _resolveSrvFileLabel(ifaceId) {
-    if (!ifaceId) return '';
-    const state = Store.getState();
-    const iface = state.interfaces[ifaceId];
-    if (!iface) return '';
-    const pkg = state.packages[iface.package];
-    return pkg ? `${pkg.name}/${iface.name}.srv` : `${iface.name}.srv`;
-  }
-
-  /* ── Action stubs (for layout) ───────────────── */
-  function _actionStubRow(role, row) {
+  function _actServerRow(row) {
     row = row || {};
-    return `<div class="list-row srv-row">
+    return `<div class="srv-row" data-role="act-server">
       <div class="srv-row-hdr">
-        <span class="row-badge ${role === 'act_server' ? 'act-server-badge' : 'act-client-badge'}">${role === 'act_server' ? 'ACT SVR' : 'ACT CLI'}</span>
-        <input class="row-srv-name srv-input" type="text" placeholder="action_name" value="${row.name || ''}">
-        <input class="row-srv-type srv-input" type="text" placeholder="pkg/action/Type" value="${row.interfaceType || ''}">
+        <span class="row-badge act-server-badge">ACT SRV</span>
+        <input class="row-srv-name srv-input" placeholder="/action_name"
+               value="${row.name || ''}" autocomplete="off" spellcheck="false">
         <button class="row-del" title="Remove">×</button>
       </div>
+      <div class="srv-row-details">
+        <div class="srv-detail-row">
+          <span class="srv-detail-label">Interface</span>
+          <select class="srv-iface-select srv-select" data-iface-type="action">
+            ${_ifaceOptions('action', row.interfaceId || '')}
+          </select>
+          <button class="srv-define-btn" data-iface-type="action">+ Define</button>
+        </div>
+        <div class="srv-detail-row">
+          <span class="srv-detail-label">Goal CB</span>
+          <input class="srv-cb-input srv-input" placeholder="handle_goal"
+                 value="${row.callbackName || ''}">
+        </div>
+        <div class="srv-detail-row">
+          <span class="srv-detail-label">Execute CB</span>
+          <input class="srv-exec-input srv-input" placeholder="execute_callback"
+                 value="${row.executeCallback || ''}">
+        </div>
+        <div class="srv-detail-row">
+          <span class="srv-detail-label srv-optional-hint">Cancel CB</span>
+          <input class="srv-cancel-input srv-input" placeholder="handle_cancel (optional)"
+                 value="${row.cancelCallback || ''}">
+        </div>
+      </div>
     </div>`;
   }
 
-  /* ── Render ──────────────────────────────────── */
+  function _actClientRow(row) {
+    row = row || {};
+    return `<div class="srv-row" data-role="act-client">
+      <div class="srv-row-hdr">
+        <span class="row-badge act-client-badge">ACT CLI</span>
+        <input class="row-srv-name srv-input" placeholder="/action_name"
+               value="${row.name || ''}" autocomplete="off" spellcheck="false">
+        <button class="row-del" title="Remove">×</button>
+      </div>
+      <div class="srv-row-details">
+        <div class="srv-detail-row">
+          <span class="srv-detail-label">Interface</span>
+          <select class="srv-iface-select srv-select" data-iface-type="action">
+            ${_ifaceOptions('action', row.interfaceId || '')}
+          </select>
+          <button class="srv-define-btn" data-iface-type="action">+ Define</button>
+        </div>
+        <div class="srv-detail-row">
+          <span class="srv-detail-label srv-optional-hint">Result CB</span>
+          <input class="srv-cb-input srv-input" placeholder="result_callback (optional)"
+                 value="${row.callbackName || ''}">
+        </div>
+        <div class="srv-detail-row">
+          <span class="srv-detail-label srv-optional-hint">Feedback CB</span>
+          <input class="srv-feedback-input srv-input" placeholder="feedback_callback (optional)"
+                 value="${row.feedbackCallback || ''}">
+        </div>
+      </div>
+    </div>`;
+  }
+
+  /* ── Render ──────────────────────────────────────────────────────── */
   function render(draft) {
-    const nodeId   = draft.id;
-    const ssrvRows = (draft.serviceServers || []).map(r => _srvServerRow(r)).join('');
-    const scliRows = (draft.serviceClients || []).map(r => _srvClientRow(r, nodeId)).join('');
-    const asrvRows = (draft.actionServers  || []).map(r => _actionStubRow('act_server', r)).join('');
-    const acliRows = (draft.actionClients  || []).map(r => _actionStubRow('act_client', r)).join('');
+    const srvServers = (draft.serviceServers || []).map(_srvServerRow).join('');
+    const srvClients = (draft.serviceClients || []).map(_srvClientRow).join('');
+    const actServers = (draft.actionServers  || []).map(_actServerRow).join('');
+    const actClients = (draft.actionClients  || []).map(_actClientRow).join('');
+    const empty = (html) => html || '<div class="comms-empty">None — click + Add</div>';
 
     return `
       <div class="modal-form">
         <div class="srv-legend">
-          <span class="legend-item"><span class="row-badge srv-server-badge">SRV SVR</span> This node hosts a service</span>
-          <span class="legend-item"><span class="row-badge srv-client-badge">SRV CLI</span> This node calls a server</span>
-          <button class="srv-shortcut-btn" id="open-iface-modal">🔌 Configure .srv Interfaces</button>
+          <span class="legend-item"><span class="row-badge srv-server-badge">SRV SRV</span> Service Server</span>
+          <span class="legend-item"><span class="row-badge srv-client-badge">SRV CLI</span> Service Client</span>
+          <span class="legend-item"><span class="row-badge act-server-badge">ACT SRV</span> Action Server</span>
+          <span class="legend-item"><span class="row-badge act-client-badge">ACT CLI</span> Action Client</span>
+          <button class="srv-shortcut-btn" id="srv-open-iface">🔌 Manage Interfaces</button>
         </div>
 
-        <div class="section-hdr">Service Servers
-          <button class="add-row-btn" id="add-ssrv">+ Add</button>
+        <div class="section-hdr" style="margin-top:16px">
+          Services
+          <button class="add-row-btn" id="add-srv-server">+ Server</button>
+          <button class="add-row-btn" id="add-srv-client">+ Client</button>
         </div>
-        <div id="ssrv-rows">${ssrvRows || '<div class="comms-empty">No service servers — click + Add</div>'}</div>
+        <div id="srv-rows">${empty(srvServers + srvClients)}</div>
 
-        <div class="section-hdr" style="margin-top:22px">Service Clients
-          <button class="add-row-btn" id="add-scli">+ Add</button>
+        <div class="section-hdr" style="margin-top:24px">
+          Actions
+          <button class="add-row-btn" id="add-act-server">+ Server</button>
+          <button class="add-row-btn" id="add-act-client">+ Client</button>
         </div>
-        <div id="scli-rows">${scliRows || '<div class="comms-empty">No service clients — click + Add</div>'}</div>
-
-        <div class="section-hdr" style="margin-top:22px">Action Servers
-          <button class="add-row-btn" id="add-asrv">+ Add</button>
-        </div>
-        <div id="asrv-rows">${asrvRows || '<div class="comms-empty">No action servers</div>'}</div>
-
-        <div class="section-hdr" style="margin-top:20px">Action Clients
-          <button class="add-row-btn" id="add-acli">+ Add</button>
-        </div>
-        <div id="acli-rows">${acliRows || '<div class="comms-empty">No action clients</div>'}</div>
+        <div id="act-rows">${empty(actServers + actClients)}</div>
       </div>
     `;
   }
 
-  /* ── Bind ────────────────────────────────────── */
-  function bind(draft) {
-    const nodeId = draft.id;
-    _bindAllRows(nodeId);
+  /* ── Row binding ─────────────────────────────────────────────────── */
+  let _ifaceHandler = null;
 
-    document.getElementById('add-ssrv')?.addEventListener('click', () => _appendSrvServer());
-    document.getElementById('add-scli')?.addEventListener('click', () => _appendSrvClient(nodeId));
-    document.getElementById('add-asrv')?.addEventListener('click', () => _appendActionRow('asrv-rows', 'act_server'));
-    document.getElementById('add-acli')?.addEventListener('click', () => _appendActionRow('acli-rows', 'act_client'));
-    document.getElementById('open-iface-modal')?.addEventListener('click', () => Bus.emit('interface-modal:open', { ifaceId: null, type: 'srv' }));
-  }
+  function _bindRow(rowEl) {
+    rowEl.querySelector('.row-del')
+      .addEventListener('click', () => rowEl.remove());
 
-  function _bindAllRows(nodeId) {
-    document.querySelectorAll('.srv-server-entry').forEach(row => _bindServerRow(row));
-    document.querySelectorAll('.srv-client-entry').forEach(row => _bindClientRow(row, nodeId));
-    document.querySelectorAll('.list-row:not(.srv-server-entry):not(.srv-client-entry) .row-del').forEach(btn => {
-      btn.addEventListener('click', () => btn.closest('.list-row')?.remove());
+    const nameInput = rowEl.querySelector('.row-srv-name');
+    nameInput?.addEventListener('input', () => {
+      const v = nameInput.value;
+      if (v && !v.startsWith('/')) nameInput.value = '/' + v;
+    });
+
+    rowEl.querySelectorAll('.srv-define-btn').forEach(btn => {
+      btn.addEventListener('click', () =>
+        Bus.emit('interface-modal:open', { ifaceId: null, type: btn.dataset.ifaceType }));
     });
   }
 
-  function _bindServerRow(row) {
-    row.querySelector('.row-del')?.addEventListener('click', () => row.remove());
-    row.querySelector('.srv-define-btn')?.addEventListener('click', () => Bus.emit('interface-modal:open', { ifaceId: null, type: 'srv' }));
-  }
-
-  function _bindClientRow(row, nodeId) {
-    row.querySelector('.row-del')?.addEventListener('click', () => row.remove());
-
-    /* Auto-fill srvFile when server is selected */
-    const serverSel = row.querySelector('.row-cli-server');
-    const srvFileEl = row.querySelector('.row-cli-srvfile');
-    if (serverSel) {
-      serverSel.addEventListener('change', () => {
-        const opt = serverSel.options[serverSel.selectedIndex];
-        const ifaceId = opt?.dataset.srvfile || '';
-        if (srvFileEl) srvFileEl.value = _resolveSrvFileLabel(ifaceId);
-        srvFileEl?.dataset && (srvFileEl.dataset.ifaceId = ifaceId);
-      });
-    }
-
-    /* Checkboxes toggle conditional fields */
-    row.querySelectorAll('.srv-checkbox').forEach(cb => {
-      cb.addEventListener('change', () => {
-        const target = cb.dataset.target;
-        const field  = row.querySelector(`.row-cli-${target === 'cli-timeout' ? 'timeout' : 'srfn'}`);
-        if (field) field.style.display = cb.checked ? '' : 'none';
-      });
-    });
-  }
-
-  function _appendSrvServer() {
-    const container = document.getElementById('ssrv-rows');
-    const empty     = container.querySelector('.comms-empty');
-    if (empty) empty.remove();
-    const div = document.createElement('div');
-    div.innerHTML = _srvServerRow({});
-    const row = div.firstElementChild;
-    container.appendChild(row);
-    _bindServerRow(row);
-    row.querySelector('.row-srv-name')?.focus();
-  }
-
-  function _appendSrvClient(nodeId) {
-    const container = document.getElementById('scli-rows');
-    const empty     = container.querySelector('.comms-empty');
-    if (empty) empty.remove();
-    const div = document.createElement('div');
-    div.innerHTML = _srvClientRow({}, nodeId);
-    const row = div.firstElementChild;
-    container.appendChild(row);
-    _bindClientRow(row, nodeId);
-  }
-
-  function _appendActionRow(containerId, role) {
+  function _appendRow(containerId, html) {
     const container = document.getElementById(containerId);
     const empty     = container.querySelector('.comms-empty');
     if (empty) empty.remove();
-    const div = document.createElement('div');
-    div.innerHTML = _actionStubRow(role, {});
-    const row = div.firstElementChild;
+    const div       = document.createElement('div');
+    div.innerHTML   = html;
+    const row       = div.firstElementChild;
     container.appendChild(row);
-    row.querySelector('.row-del')?.addEventListener('click', () => row.remove());
+    _bindRow(row);
     row.querySelector('.row-srv-name')?.focus();
   }
 
-  /* ── Collect ─────────────────────────────────── */
+  /* ── Bind ────────────────────────────────────────────────────────── */
+  function bind() {
+    document.querySelectorAll('#srv-rows .srv-row, #act-rows .srv-row')
+      .forEach(_bindRow);
+
+    document.getElementById('add-srv-server')
+      ?.addEventListener('click', () => _appendRow('srv-rows', _srvServerRow({})));
+    document.getElementById('add-srv-client')
+      ?.addEventListener('click', () => _appendRow('srv-rows', _srvClientRow({})));
+    document.getElementById('add-act-server')
+      ?.addEventListener('click', () => _appendRow('act-rows', _actServerRow({})));
+    document.getElementById('add-act-client')
+      ?.addEventListener('click', () => _appendRow('act-rows', _actClientRow({})));
+
+    document.getElementById('srv-open-iface')
+      ?.addEventListener('click', () =>
+        Bus.emit('interface-modal:open', { ifaceId: null, type: 'srv' }));
+
+    if (_ifaceHandler) {
+      Bus.off('interface:added',   _ifaceHandler);
+      Bus.off('interface:updated', _ifaceHandler);
+      Bus.off('interface:removed', _ifaceHandler);
+    }
+    _ifaceHandler = () => _refreshIfaceSelects();
+    Bus.on('interface:added',   _ifaceHandler);
+    Bus.on('interface:updated', _ifaceHandler);
+    Bus.on('interface:removed', _ifaceHandler);
+  }
+
+  /* ── Collect ─────────────────────────────────────────────────────── */
   function collect() {
     const serviceServers = [];
-    document.querySelectorAll('#ssrv-rows .srv-server-entry').forEach(row => {
-      const name       = (row.querySelector('.row-srv-name')?.value  || '').trim();
-      const srvFile    = row.querySelector('.row-srv-file')?.value    || '';
-      const callbackFn = (row.querySelector('.row-srv-cb')?.value    || '').trim();
-      const qos        = row.querySelector('.row-qos')?.value         || 'default';
-      if (name) serviceServers.push({ name, srvFile, callbackFn, qos });
-    });
-
     const serviceClients = [];
-    document.querySelectorAll('#scli-rows .srv-client-entry').forEach(row => {
-      const serverSel   = row.querySelector('.row-cli-server');
-      const name        = serverSel?.value || '';
-      const opt         = serverSel?.options[serverSel.selectedIndex];
-      const srvFile     = opt?.dataset.srvfile || row.querySelector('.row-cli-srvfile')?.dataset?.ifaceId || '';
-      const ctCb        = row.querySelector('[data-target="cli-timeout"]');
-      const srfnCb      = row.querySelector('[data-target="cli-srfn"]');
-      const ctMs        = parseInt(row.querySelector('.row-cli-timeout')?.value || 5000);
-      const srfnName    = (row.querySelector('.row-cli-srfn')?.value || '').trim();
-      if (name) serviceClients.push({
-        name,
-        srvFile,
-        connectTimeout: { enabled: ctCb?.checked || false, ms: ctMs },
-        sendRequestFn:  { enabled: srfnCb?.checked || false, fn: srfnName },
-      });
+    const actionServers  = [];
+    const actionClients  = [];
+
+    document.querySelectorAll('#srv-rows .srv-row').forEach(row => {
+      const role         = row.dataset.role;
+      const name         = (row.querySelector('.row-srv-name')?.value   || '').trim();
+      const interfaceId  =  row.querySelector('.srv-iface-select')?.value || '';
+      const callbackName = (row.querySelector('.srv-cb-input')?.value   || '').trim();
+      if (role === 'srv-server') serviceServers.push({ name, interfaceId, callbackName });
+      if (role === 'srv-client') serviceClients.push({ name, interfaceId, callbackName });
     });
 
-    const actionServers = [];
-    document.querySelectorAll('#asrv-rows .list-row').forEach(row => {
-      const name = (row.querySelector('.row-srv-name')?.value || '').trim();
-      const type = (row.querySelector('.row-srv-type')?.value || '').trim();
-      if (name) actionServers.push({ name, interfaceType: type });
+    document.querySelectorAll('#act-rows .srv-row').forEach(row => {
+      const role            = row.dataset.role;
+      const name            = (row.querySelector('.row-srv-name')?.value        || '').trim();
+      const interfaceId     =  row.querySelector('.srv-iface-select')?.value    || '';
+      const callbackName    = (row.querySelector('.srv-cb-input')?.value        || '').trim();
+      const executeCallback = (row.querySelector('.srv-exec-input')?.value      || '').trim();
+      const cancelCallback  = (row.querySelector('.srv-cancel-input')?.value    || '').trim();
+      const feedbackCallback = (row.querySelector('.srv-feedback-input')?.value || '').trim();
+      if (role === 'act-server')
+        actionServers.push({ name, interfaceId, callbackName, executeCallback, cancelCallback });
+      if (role === 'act-client')
+        actionClients.push({ name, interfaceId, callbackName, feedbackCallback });
     });
 
-    const actionClients = [];
-    document.querySelectorAll('#acli-rows .list-row').forEach(row => {
-      const name = (row.querySelector('.row-srv-name')?.value || '').trim();
-      const type = (row.querySelector('.row-srv-type')?.value || '').trim();
-      if (name) actionClients.push({ name, interfaceType: type });
-    });
+    if (_ifaceHandler) {
+      Bus.off('interface:added',   _ifaceHandler);
+      Bus.off('interface:updated', _ifaceHandler);
+      Bus.off('interface:removed', _ifaceHandler);
+      _ifaceHandler = null;
+    }
 
     return { serviceServers, serviceClients, actionServers, actionClients };
   }
