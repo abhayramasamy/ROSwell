@@ -131,6 +131,22 @@ window.Canvas = (() => {
           selector: 'node[kind="srvbox"]:selected',
           style: { 'border-width': 0 }
         },
+        
+        /* Action link: client → server (bright blue, dashed) */
+        {
+          selector: 'edge[edgeType="action-link"]',
+          style: {
+            'width':              2.5,
+            'line-color':         '#3b82f6',
+            'target-arrow-color': '#60a5fa',
+            'target-arrow-shape': 'triangle',
+            'source-arrow-shape': 'none',
+            'line-style':         'dashed',
+            'line-dash-pattern':  [8, 4],
+            'curve-style':        'bezier',
+            'z-index':            2,
+          }
+        },
         /* Topic oval */
         {
           selector: 'node[kind="topic"]',
@@ -211,7 +227,7 @@ window.Canvas = (() => {
 
   /* ── Node style ──────────────────────────────── */
   function _applyNodeStyle(el, node) {
-    const hasServers = (node.serviceServers || []).some(s => s.name);
+    const hasServers = (node.serviceServers || []).some(s => s.name) || (node.actionServers || []).some(s => s.name);
     if (hasServers) {
       el.style({ 'background-color': STYLE_NODE_SERVERS.bg, 'border-color': STYLE_NODE_SERVERS.border, 'color': STYLE_NODE_SERVERS.color });
     } else {
@@ -230,30 +246,38 @@ window.Canvas = (() => {
     /* Remove old srvboxes for this node */
     cy.$(`[kind="srvbox"][nodeId="${nodeId}"]`).remove();
 
-    const servers = (node.serviceServers || []).filter(s => s.name);
+    const srvServers = (node.serviceServers || []).filter(s => s.name);
+    const actServers  = (node.actionServers  || []).filter(s => s.name);
+    const allBoxes    = [
+      ...srvServers.map(s => ({ ...s, boxKind: 'srv'    })),
+      ...actServers.map(s => ({ ...s, boxKind: 'action' })),
+    ];
 
-    if (!servers.length) {
-      /* Restore leaf node style */
+    if (!allBoxes.length) {
       _applyNodeStyle(cyNode, node);
       return;
     }
 
-    /* Place srvboxes centred around node.pos so compound centroid ≈ node.pos */
     const pos = node.pos || cyNode.position();
-    const n   = servers.length;
-    servers.forEach((srv, i) => {
-      const yOff = (i - (n - 1) / 2) * 52;
+    const n   = allBoxes.length;
+    allBoxes.forEach((srv, i) => {
+      const yOff    = (i - (n - 1) / 2) * 52;
+      const badge   = srv.boxKind === 'action' ? '⚡' : '🔗';
+      const bgColor = srv.boxKind === 'action' ? '#1e1b4b' : '#ffffff';
+      const fgColor = srv.boxKind === 'action' ? '#c4b5fd' : '#1e1b4b';
       cy.add({
         group: 'nodes',
         data: {
           id:      `srvbox__${nodeId}__${i}`,
-          label:   '"' + srv.name + '"',
+          label:   badge + ' ' + srv.name,
           kind:    'srvbox',
           parent:  nodeId,
           nodeId:  nodeId,
           srvIdx:  i,
+          boxKind: srv.boxKind,
         },
         position: { x: pos.x, y: pos.y + yOff },
+        style:     { 'background-color': bgColor, 'color': fgColor },
         grabbable: false,
         selectable: false,
       });
@@ -512,38 +536,86 @@ window.Canvas = (() => {
       const node   = state.nodes[nodeId];
       if (!node) return;
 
-      const srv      = (node.serviceServers || [])[srvIdx] || {};
-      const srvLabel = srv.srvFile ? _resolveSrvLabel(srv.srvFile) : '—';
-      const iface    = _resolveIfaceData(srv.srvFile || '');
+      const boxKind = e.target.data('boxKind') || 'srv';
+      const allBoxItems = [
+        ...(node.serviceServers || []).filter(s => s.name).map(s => ({...s, boxKind:'srv'})),
+        ...(node.actionServers  || []).filter(s => s.name).map(s => ({...s, boxKind:'action'})),
+      ];
+      const srv = allBoxItems[srvIdx] || {};
+      const ev  = e.originalEvent;
 
-      /* Count client nodes */
-      const clientNodes = Object.values(state.nodes).filter(n =>
-        n.id !== nodeId && (n.serviceClients || []).some(c => c.name === srv.name)
-      );
-
-      let reqHtml  = iface ? _ttVarList(iface.request)  : '<span class="tt-val">—</span>';
-      let respHtml = iface ? _ttVarList(iface.response) : '<span class="tt-val">—</span>';
-
-      const ev = e.originalEvent;
-      _showTooltip(ev.clientX, ev.clientY, `
-        <div class="tt-title" style="color:#a78bfa">⚡ SERVICE SERVER</div>
-        ${_ttRow('Server',   srv.name || '—')}
-        ${_ttRow('Host',     node.name)}
-        ${_ttRow('.srv',     srvLabel)}
-        <div class="tt-row tt-vars-row">
-          <span class="tt-key">Request</span>
-          <div class="tt-val-col">${reqHtml}</div>
-        </div>
-        <div class="tt-row tt-vars-row">
-          <span class="tt-key">Response</span>
-          <div class="tt-val-col">${respHtml}</div>
-        </div>
-        ${_ttRow('Callback',    srv.callbackFn || '—')}
-        ${_ttRow('QoS',         srv.qos || 'default')}
-        ${_ttRow('Clients',     clientNodes.length + (clientNodes.length ? ' — ' + clientNodes.map(n=>n.name).join(', ') : ''))}
-      `);
+      if (srv.boxKind === 'action') {
+        const ifaceId   = srv.interfaceId || '';
+        const iface     = ifaceId ? state.interfaces[ifaceId] : null;
+        const ifaceLabel = iface ? (state.packages[iface.package]?.name||'') + '/' + iface.name + '.action' : '—';
+        const clientNodes = Object.values(state.nodes).filter(n =>
+          n.id !== nodeId && (n.actionClients||[]).some(c => c.name === srv.name)
+        );
+        _showTooltip(ev.clientX, ev.clientY, `
+          <div class="tt-title" style="color:#c4b5fd">⚡ ACTION SERVER</div>
+          ${_ttRow('Action',      srv.name || '—')}
+          ${_ttRow('Host',        node.name)}
+          ${_ttRow('.action',     ifaceLabel)}
+          ${_ttRow('Goal CB',     srv.callbackName || '—')}
+          ${_ttRow('Execute CB',  srv.executeCallback || '—')}
+          ${_ttRow('Cancel CB',   srv.cancelCallback || '—')}
+          ${_ttRow('Timeout',     srv.timeoutEnabled ? (srv.maxExecutionTime||10)+'s' : 'none')}
+          ${_ttRow('Goal accept', srv.goalAccept || 'always')}
+          ${_ttRow('Clients',     clientNodes.length + (clientNodes.length ? ' — ' + clientNodes.map(n=>n.name).join(', ') : ''))}
+        `);
+      } else {
+        const srvLabel = srv.srvFile ? _resolveSrvLabel(srv.srvFile) : '—';
+        const iface    = _resolveIfaceData(srv.srvFile || '');
+        const clientNodes = Object.values(state.nodes).filter(n =>
+          n.id !== nodeId && (n.serviceClients||[]).some(c => c.name === srv.name)
+        );
+        let reqHtml  = iface ? _ttVarList(iface.request)  : '<span class="tt-val">—</span>';
+        let respHtml = iface ? _ttVarList(iface.response) : '<span class="tt-val">—</span>';
+        _showTooltip(ev.clientX, ev.clientY, `
+          <div class="tt-title" style="color:#a78bfa">🔗 SERVICE SERVER</div>
+          ${_ttRow('Server',   srv.name || '—')}
+          ${_ttRow('Host',     node.name)}
+          ${_ttRow('.srv',     srvLabel)}
+          <div class="tt-row tt-vars-row">
+            <span class="tt-key">Request</span>
+            <div class="tt-val-col">${reqHtml}</div>
+          </div>
+          <div class="tt-row tt-vars-row">
+            <span class="tt-key">Response</span>
+            <div class="tt-val-col">${respHtml}</div>
+          </div>
+          ${_ttRow('Callback', srv.callbackFn || '—')}
+          ${_ttRow('Clients',  clientNodes.length + (clientNodes.length ? ' — ' + clientNodes.map(n=>n.name).join(', ') : ''))}
+        `);
+      }
     });
 
+
+    /* Action link edge: client → server (dashed blue) */
+    cy.on('mouseover', 'edge[edgeType="action-link"]', e => {
+      if (_bboxActive) return;
+      const parts      = e.target.id().split('__');
+      const state      = Store.getState();
+      const clientNode = state.nodes[parts[1]];
+      const serverNode = state.nodes[parts[2]];
+      const actionName = e.target.data('actionName') || '—';
+      if (!clientNode || !serverNode) return;
+      const srvEntry   = (serverNode.actionServers || []).find(s => s.name === actionName) || {};
+      const ifaceId    = e.target.data('interfaceId') || srvEntry.interfaceId || '';
+      const iface      = ifaceId ? Store.getState().interfaces[ifaceId] : null;
+      const ifaceLabel = iface ? (Store.getState().packages[iface.package]?.name || '') + '/' + iface.name + '.action' : '—';
+      const ev = e.originalEvent;
+      _showTooltip(ev.clientX, ev.clientY, `
+        <div class="tt-title" style="color:#60a5fa">⚡ ACTION LINK</div>
+        ${_ttRow('Action',    actionName)}
+        ${_ttRow('Client',    clientNode.name)}
+        ${_ttRow('Server',    serverNode.name)}
+        ${_ttRow('.action',   ifaceLabel)}
+        ${_ttRow('Timeout',   srvEntry.timeoutEnabled ? (srvEntry.maxExecutionTime||10) + 's' : 'none')}
+        ${_ttRow('Goal CB',   srvEntry.callbackName || '—')}
+        ${_ttRow('Execute CB', srvEntry.executeCallback || '—')}
+      `);
+    });
     cy.on('mouseout', 'edge, node', () => _hideTooltip());
     cy.on('pan zoom', () => _hideTooltip());
   }
@@ -595,10 +667,30 @@ window.Canvas = (() => {
       });
     });
 
+
+      /* Action link edges: client → server (dashed blue) */
+      (node.actionClients || []).forEach(cli => {
+        if (!cli.name) return;
+        nodes.forEach(nodeB => {
+          if (nodeB.id === node.id) return;
+          (nodeB.actionServers || []).forEach(srv => {
+            if (srv.name === cli.name) {
+              const key = `actlink__${node.id}__${nodeB.id}__${encodeURIComponent(cli.name)}`;
+              desired.set(key, {
+                src:        node.id,
+                tgt:        nodeB.id,
+                actionName: cli.name,
+                interfaceId: srv.interfaceId || '',
+                edgeType:   'action-link',
+              });
+            }
+          });
+        });
+      });
     cy.edges().forEach(edge => { if (!desired.has(edge.id())) cy.remove(edge); });
     desired.forEach((edge, key) => {
       if (!cy.$('#' + key).length) {
-        cy.add({ group: 'edges', data: { id: key, source: edge.src, target: edge.tgt, edgeType: edge.edgeType, serverName: edge.serverName || '', srvFile: edge.srvFile || '' } });
+        cy.add({ group: 'edges', data: { id: key, source: edge.src, target: edge.tgt, edgeType: edge.edgeType, serverName: edge.serverName || '', srvFile: edge.srvFile || '', actionName: edge.actionName || '', interfaceId: edge.interfaceId || '' } });
       }
     });
   }
